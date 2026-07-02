@@ -10,17 +10,14 @@ from nav2_common.launch import RewrittenYaml
 
 
 def generate_launch_description():
-    # Getting directories and launch-files
     bringup_dir = get_package_share_directory("nav_bringup")
 
-    # Input parameters declaration
     namespace = LaunchConfiguration("namespace")
     params_file = LaunchConfiguration("params_file")
     use_sim_time = LaunchConfiguration("use_sim_time")
     use_respawn = LaunchConfiguration("use_respawn")
     log_level = LaunchConfiguration("log_level")
 
-    # Create our own temporary YAML files that include substitutions
     param_substitutions = {"use_sim_time": use_sim_time}
 
     configured_params = ParameterFile(
@@ -33,7 +30,6 @@ def generate_launch_description():
         allow_substs=True,
     )
 
-    # Declare the launch arguments
     declare_namespace_cmd = DeclareLaunchArgument(
         "namespace", default_value="", description="Top-level namespace"
     )
@@ -41,7 +37,7 @@ def generate_launch_description():
     declare_params_file_cmd = DeclareLaunchArgument(
         "params_file",
         default_value=os.path.join(
-            bringup_dir, "config", "nav2_params.simulation.yaml"
+            bringup_dir, "config", "nav2_params.legged.yaml"
         ),
         description="Full path to the ROS2 parameters file to use for all launched nodes",
     )
@@ -114,28 +110,19 @@ def generate_launch_description():
         name="static_transform_publisher_map2odom",
         output="screen",
         arguments=[
-            "--x",
-            "0.0",
-            "--y",
-            "0.0",
-            "--z",
-            "0.0",
-            "--roll",
-            "0.0",
-            "--pitch",
-            "0.0",
-            "--yaw",
-            "0.0",
-            "--frame-id",
-            "map",
-            "--child-frame-id",
-            "odom",
+            "--x", "0.0",
+            "--y", "0.0",
+            "--z", "0.0",
+            "--roll", "0.0",
+            "--pitch", "0.0",
+            "--yaw", "0.0",
+            "--frame-id", "map",
+            "--child-frame-id", "odom",
         ],
     )
 
     ld = LaunchDescription()
 
-    # Declare the launch options
     ld.add_action(declare_namespace_cmd)
     ld.add_action(declare_params_file_cmd)
     ld.add_action(declare_use_sim_time_cmd)

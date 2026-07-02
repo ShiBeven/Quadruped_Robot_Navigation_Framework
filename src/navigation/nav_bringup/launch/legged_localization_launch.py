@@ -11,7 +11,6 @@ from nav2_common.launch import RewrittenYaml
 
 
 def generate_launch_description():
-    # Get the launch directory
     bringup_dir = get_package_share_directory("nav_bringup")
 
     namespace = LaunchConfiguration("namespace")
@@ -28,7 +27,6 @@ def generate_launch_description():
 
     lifecycle_nodes = ["map_server"]
 
-    # Create our own temporary YAML files that include substitutions
     param_substitutions = {"use_sim_time": use_sim_time, "yaml_filename": map_yaml_file}
 
     configured_params = ParameterFile(
@@ -70,7 +68,7 @@ def generate_launch_description():
     declare_params_file_cmd = DeclareLaunchArgument(
         "params_file",
         default_value=os.path.join(
-            bringup_dir, "config", "nav2_params.reality.yaml"
+            bringup_dir, "config", "nav2_params.legged.yaml"
         ),
         description="Full path to the ROS2 parameters file to use for all launched nodes",
     )
@@ -186,14 +184,11 @@ def generate_launch_description():
         ],
     )
 
-    # Create the launch description and populate
     ld = LaunchDescription()
 
-    # Set environment variables
     ld.add_action(stdout_linebuf_envvar)
     ld.add_action(colorized_output_envvar)
 
-    # Declare the launch options
     ld.add_action(declare_namespace_cmd)
     ld.add_action(declare_map_yaml_cmd)
     ld.add_action(declare_use_sim_time_cmd)
@@ -205,7 +200,6 @@ def generate_launch_description():
     ld.add_action(declare_use_respawn_cmd)
     ld.add_action(declare_log_level_cmd)
 
-    # Add the actions to launch all of the localization nodes
     ld.add_action(start_point_lio_node)
     ld.add_action(load_nodes)
     ld.add_action(load_composable_nodes)

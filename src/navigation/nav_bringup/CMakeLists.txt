@@ -19,5 +19,5 @@ ament_auto_package(
   map
   config
   behavior_trees
-  rviz
+  description
 )

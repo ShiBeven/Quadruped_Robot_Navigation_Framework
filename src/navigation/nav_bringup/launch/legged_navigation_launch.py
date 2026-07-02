@@ -11,7 +11,6 @@ from nav2_common.launch import RewrittenYaml
 
 
 def generate_launch_description():
-    # Get the launch directory
     bringup_dir = get_package_share_directory("nav_bringup")
 
     namespace = LaunchConfiguration("namespace")
@@ -35,7 +34,6 @@ def generate_launch_description():
         "velocity_smoother",
     ]
 
-    # Create our own temporary YAML files that include substitutions
     param_substitutions = {"use_sim_time": use_sim_time, "autostart": autostart}
 
     configured_params = ParameterFile(
@@ -67,7 +65,7 @@ def generate_launch_description():
     declare_params_file_cmd = DeclareLaunchArgument(
         "params_file",
         default_value=os.path.join(
-            bringup_dir, "config", "nav2_params.simulation.yaml"
+            bringup_dir, "config", "nav2_params.legged.yaml"
         ),
         description="Full path to the ROS2 parameters file to use for all launched nodes",
     )
@@ -327,14 +325,11 @@ def generate_launch_description():
         ],
     )
 
-    # Create the launch description and populate
     ld = LaunchDescription()
 
-    # Set environment variables
     ld.add_action(stdout_linebuf_envvar)
     ld.add_action(colorized_output_envvar)
 
-    # Declare the launch options
     ld.add_action(declare_namespace_cmd)
     ld.add_action(declare_use_sim_time_cmd)
     ld.add_action(declare_params_file_cmd)
@@ -345,7 +340,6 @@ def generate_launch_description():
     ld.add_action(declare_log_level_cmd)
     ld.add_action(declare_use_sensor_scan_cmd)
 
-    # Add the actions to launch all of the navigation nodes
     ld.add_action(start_terrain_analysis_cmd)
     ld.add_action(start_terrain_analysis_ext_cmd)
     ld.add_action(load_nodes)
