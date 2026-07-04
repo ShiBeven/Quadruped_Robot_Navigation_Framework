@@ -92,7 +92,7 @@ LaserScanToPointCloudNode::LaserScanToPointCloudNode(const rclcpp::NodeOptions &
 
 LaserScanToPointCloudNode::~LaserScanToPointCloudNode()
 {
-  alive_.store(true);
+  alive_.store(false);
   subscription_listener_thread_.join();
 }
 

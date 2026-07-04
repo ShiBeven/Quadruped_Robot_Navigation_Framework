@@ -26,21 +26,16 @@ std::deque<sensor_msgs::msg::Imu::ConstSharedPtr> imu_deque;
 
 void standard_pcl_cbk(const sensor_msgs::msg::PointCloud2::SharedPtr & msg)
 {
-  // mtx_buffer.lock();
+  mtx_buffer.lock();
   scan_count++;
   double preprocess_start_time = omp_get_wtime();
   if (rclcpp::Time(msg->header.stamp).seconds() < last_timestamp_lidar) {
     RCLCPP_ERROR(rclcpp::get_logger("li_initialization"), "lidar loop back, clear buffer");
+    mtx_buffer.unlock();
     return;
   }
 
   last_timestamp_lidar = rclcpp::Time(msg->header.stamp).seconds();
-  // printf("check lidar time %f\n", last_timestamp_lidar);
-  // if (abs(last_timestamp_imu - last_timestamp_lidar) > 1.0 && !timediff_set_flg && !imu_deque.empty()) {
-  //     timediff_set_flg = true;
-  //     timediff_imu_wrt_lidar = last_timestamp_imu - last_timestamp_lidar;
-  //     printf("Self sync IMU and LiDAR, HARD time lag is %.10lf \n \n", timediff_imu_wrt_lidar);
-  // }
 
   if ((lidar_type == VELO16 || lidar_type == OUST64 || lidar_type == HESAIxt32) && cut_frame_init) {
     deque<PointCloudXYZI::Ptr> ptr;
@@ -57,7 +52,7 @@ void standard_pcl_cbk(const sensor_msgs::msg::PointCloud2::SharedPtr & msg)
     p_pre->process(msg, ptr);
     if (con_frame) {
       if (frame_ct == 0) {
-        time_con = last_timestamp_lidar;  //msg->header.stamp.toSec();
+        time_con = last_timestamp_lidar;
       }
       if (frame_ct < 10) {
         for (int i = 0; i < ptr->size(); i++) {
@@ -67,7 +62,6 @@ void standard_pcl_cbk(const sensor_msgs::msg::PointCloud2::SharedPtr & msg)
         frame_ct++;
       } else {
         PointCloudXYZI::Ptr ptr_con_i(new PointCloudXYZI(10000, 1));
-        // std::cout << "ptr div num:" << ptr_div->size() << '\n';
         *ptr_con_i = *ptr_con;
         lidar_buffer.push_back(ptr_con_i);
         double time_con_i = time_con;
@@ -83,17 +77,18 @@ void standard_pcl_cbk(const sensor_msgs::msg::PointCloud2::SharedPtr & msg)
     }
   }
   s_plot11[scan_count] = omp_get_wtime() - preprocess_start_time;
-  // mtx_buffer.unlock();
-  // sig_buffer.notify_all();
+  mtx_buffer.unlock();
+  sig_buffer.notify_all();
 }
 
 void livox_pcl_cbk(const livox_ros_driver2::msg::CustomMsg::SharedPtr & msg)
 {
-  // mtx_buffer.lock();
+  mtx_buffer.lock();
   double preprocess_start_time = omp_get_wtime();
   scan_count++;
   if (rclcpp::Time(msg->header.stamp).seconds() < last_timestamp_lidar) {
     RCLCPP_ERROR(rclcpp::get_logger("li_initialization"), "lidar loop back, clear buffer");
+    mtx_buffer.unlock();
     return;
   }
 
@@ -146,13 +141,13 @@ void livox_pcl_cbk(const livox_ros_driver2::msg::CustomMsg::SharedPtr & msg)
     }
   }
   s_plot11[scan_count] = omp_get_wtime() - preprocess_start_time;
-  // mtx_buffer.unlock();
-  // sig_buffer.notify_all();
+  mtx_buffer.unlock();
+  sig_buffer.notify_all();
 }
 
 void imu_cbk(const sensor_msgs::msg::Imu::ConstSharedPtr & msg_in)
 {
-  // mtx_buffer.lock();
+  mtx_buffer.lock();
 
   sensor_msgs::msg::Imu::SharedPtr msg(new sensor_msgs::msg::Imu(*msg_in));
   // publish_count ++;
@@ -169,14 +164,14 @@ void imu_cbk(const sensor_msgs::msg::Imu::ConstSharedPtr & msg_in)
     // std::cout << "check time:" << timestamp << ";" << last_timestamp_imu << '\n';
     // printf("time_diff%f, %f, %f\n", last_timestamp_imu - timestamp, last_timestamp_imu, timestamp);
 
-    // mtx_buffer.unlock();
-    // sig_buffer.notify_all();
+    mtx_buffer.unlock();
+    sig_buffer.notify_all();
     return;
   }
   imu_deque.emplace_back(msg);
   last_timestamp_imu = timestamp;
-  // mtx_buffer.unlock();
-  // sig_buffer.notify_all();
+  mtx_buffer.unlock();
+  sig_buffer.notify_all();
 }
 
 bool sync_packages(MeasureGroup & meas)

@@ -102,7 +102,9 @@ void SmallGicpRelocalizationNode::loadGlobalMap(const std::string & file_name)
 
   // NOTE: Transform global pcd_map (based on `lidar_odom` frame) to the `odom` frame
   Eigen::Affine3d odom_to_lidar_odom;
-  while (true) {
+  constexpr int kMaxRetries = 100;
+  int retry_count = 0;
+  while (retry_count < kMaxRetries) {
     try {
       auto tf_stamped = tf_buffer_->lookupTransform(
         base_frame_, lidar_frame_, this->now(), rclcpp::Duration::from_seconds(1.0));
@@ -113,9 +115,18 @@ void SmallGicpRelocalizationNode::loadGlobalMap(const std::string & file_name)
                               << odom_to_lidar_odom.rotation().eulerAngles(0, 1, 2).transpose());
       break;
     } catch (tf2::TransformException & ex) {
-      RCLCPP_WARN(this->get_logger(), "TF lookup failed: %s Retrying...", ex.what());
+      retry_count++;
+      RCLCPP_WARN(this->get_logger(), "TF lookup failed (%d/%d): %s Retrying...",
+                  retry_count, kMaxRetries, ex.what());
       rclcpp::sleep_for(std::chrono::seconds(1));
     }
+  }
+  if (retry_count >= kMaxRetries) {
+    RCLCPP_FATAL(this->get_logger(),
+                 "Failed to lookup transform %s -> %s after %d retries. Shutting down.",
+                 base_frame_.c_str(), lidar_frame_.c_str(), kMaxRetries);
+    rclcpp::shutdown();
+    return;
   }
   pcl::transformPointCloud(*global_map_, *global_map_, odom_to_lidar_odom);
 }

@@ -228,7 +228,8 @@ void PointCloudToLaserScanNode::cloudCallback(
     }
 
     // overwrite range at laserscan ray if new range is smaller
-    int index = (angle - scan_msg->angle_min) / scan_msg->angle_increment;
+    int index = static_cast<int>((angle - scan_msg->angle_min) / scan_msg->angle_increment);
+    index = std::min(index, static_cast<int>(ranges_size) - 1);
     if (range < scan_msg->ranges[index]) {
       scan_msg->ranges[index] = range;
     }
