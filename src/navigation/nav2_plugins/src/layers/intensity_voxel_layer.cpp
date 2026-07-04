@@ -1,6 +1,6 @@
  
 
-#include "nav2_plugins/layers/intensity_voxel_layer.hpp"
+#include "pb_nav2_plugins/layers/intensity_voxel_layer.hpp"
 
 #include <vector>
 
@@ -198,6 +198,10 @@ void IntensityVoxelLayer::updateOrigin(double new_origin_x, double new_origin_y)
   // update the origin with the appropriate world coordinates
   origin_x_ = origin_x_ + cell_ox * resolution_;
   origin_y_ = origin_y_ + cell_oy * resolution_;
+
+  // Sync voxel grid origin: reset to clear stale voxel data at old origin;
+  // the grid will be repopulated with correct coordinates in updateBounds()
+  voxel_grid_.reset();
 }
 
 }  // namespace pb_nav2_costmap_2d

@@ -692,16 +692,22 @@ rcl_interfaces::msg::SetParametersResult OmniPidPursuitController::dynamicParame
     if (type == ParameterType::PARAMETER_DOUBLE) {
       if (name == plugin_name_ + ".translation_kp") {
         translation_kp_ = parameter.as_double();
+        move_pid_->setGains(translation_kp_, translation_kd_, translation_ki_);
       } else if (name == plugin_name_ + ".translation_ki") {
         translation_ki_ = parameter.as_double();
+        move_pid_->setGains(translation_kp_, translation_kd_, translation_ki_);
       } else if (name == plugin_name_ + ".translation_kd") {
         translation_kd_ = parameter.as_double();
+        move_pid_->setGains(translation_kp_, translation_kd_, translation_ki_);
       } else if (name == plugin_name_ + ".rotation_kp") {
         rotation_kp_ = parameter.as_double();
+        heading_pid_->setGains(rotation_kp_, rotation_kd_, rotation_ki_);
       } else if (name == plugin_name_ + ".rotation_ki") {
         rotation_ki_ = parameter.as_double();
+        heading_pid_->setGains(rotation_kp_, rotation_kd_, rotation_ki_);
       } else if (name == plugin_name_ + ".rotation_kd") {
         rotation_kd_ = parameter.as_double();
+        heading_pid_->setGains(rotation_kp_, rotation_kd_, rotation_ki_);
       } else if (name == plugin_name_ + ".transform_tolerance") {
         double transform_tolerance = parameter.as_double();
         transform_tolerance_ = tf2::durationFromSec(transform_tolerance);

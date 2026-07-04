@@ -294,8 +294,8 @@ cmd_vel 流水线:
 #### 函数：publishOdometry(transform, parent_frame, child_frame, stamp)
 
 - **用途**：发布里程计并估计速度。
-- **核心算法**：维护 `static previous_transform` 和 `static previous_time`。速度 = (当前位置 - 前一位置) / dt。角速度通过四元数差分计算。
-- ⚠️ **问题**：使用 `static` 局部变量存储前一帧状态，多实例共享？单节点没问题，但如果作为 ComposableNode 多实例化，`static` 变量会跨实例共享。
+- **核心算法**：维护类成员 `previous_transform_`/`previous_time_`/`has_previous_state_` 存储前一帧状态。速度 = (当前位置 - 前一位置) / dt。角速度通过四元数差分计算。
+- ✅ **已修复**：原 `static` 局部变量改为类成员，避免多实例共享。
 
 ---
 
@@ -426,8 +426,7 @@ cmd_vel 流水线:
 #### 函数：dynamicParametersCallback(parameters) → SetParametersResult
 
 - **用途**：运行时动态参数更新，支持23个 double 参数 + 3个 bool 参数。
-- **副作用**：修改 `translation_kp_` 等成员变量（`move_pid_`/`heading_pid_` 内部使用引用吗？不——PID 在构造函数中接收值拷贝，动态参数修改后 PID 不更新！）。
-- ⚠️ **严重Bug**：`move_pid_` 和 `heading_pid_` 在 `configure()` 中用初始 kp/kd/ki 值构造，但 `dynamicParametersCallback` 只更新控制器类的成员变量 `translation_kp_` 等，并不更新 PID 对象内部的 `kp_`/`ki_`/`kd_` 成员。**运行时调整 PID 参数无效**。
+- ✅ **已修复**：PID 类新增 `setGains(kp, kd, ki)` 方法，回调中同步更新 `move_pid_`/`heading_pid_` 内部增益，运行时调参即时生效。
 
 ---
 
@@ -937,6 +936,12 @@ ros2 launch nav_bringup legged_slam_launch.py
 | | | #3 恢复 mutex 并发保护 | `li_initialization.cpp` |
 | | | #4 析构函数 atomic flag 修正 | `laserscan_to_pointcloud_node.cpp` |
 | | | #10 TF 等待超时保护 | `small_gicp_relocalization.cpp` |
+| `2833b1f` | 2026-07-04 | #1 PID 动态参数同步 | `pid.hpp`, `omni_pid_pursuit_controller.cpp` |
+| | | #5 include 路径修正 | `back_up_free_space.cpp`, `intensity_voxel_layer.cpp` |
+| | | #6 体素网格原点同步 | `intensity_voxel_layer.cpp` |
+| | | #7 无安全方向检测 | `back_up_free_space.cpp` |
+| | | #8 static→类成员 | `sensor_scan_generation.hpp/.cpp` |
+| | | #9 固定数组→vector | `li_initialization.h/.cpp` |
 
 ---
 

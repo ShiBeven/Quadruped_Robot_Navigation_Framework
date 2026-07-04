@@ -17,6 +17,12 @@ public:
   // Returns the manipulated variable given a set_point and current process value
   double calculate(double set_point, double pv);
   void setSumError(double sum_error);
+  void setGains(double kp, double kd, double ki)
+  {
+    kp_ = kp;
+    kd_ = kd;
+    ki_ = ki;
+  }
   ~PID();
 
 private:

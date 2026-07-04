@@ -26,7 +26,7 @@ extern double imu_first_time;
 extern bool lose_lid;
 extern sensor_msgs::msg::Imu imu_last, imu_next;
 extern PointCloudXYZI::Ptr ptr_con;
-extern double T1[MAXN], s_plot[MAXN], s_plot2[MAXN], s_plot3[MAXN], s_plot11[MAXN];
+extern std::vector<double> T1, s_plot, s_plot2, s_plot3, s_plot11;
 
 // extern sensor_msgs::msg::Imu::ConstSharedPtr imu_last_ptr;
 

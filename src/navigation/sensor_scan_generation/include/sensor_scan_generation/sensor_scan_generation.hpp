@@ -59,6 +59,11 @@ private:
   std::unique_ptr<message_filters::Synchronizer<SyncPolicy>> sync_;
 
   tf2::Transform tf_lidar_to_robot_base_;
+
+  // Previous-frame state for velocity estimation (replaces static locals)
+  tf2::Transform previous_transform_;
+  std::chrono::steady_clock::time_point previous_time_;
+  bool has_previous_state_{false};
 };
 
 }  // namespace sensor_scan_generation

@@ -9,10 +9,10 @@
 
 | 严重程度 | 数量 | 已修复 |
 |----------|------|--------|
-| 🔴 严重 | 10 | 4 |
+| 🔴 严重 | 10 | 10 |
 | 🟡 中等 | 24 | 0 |
 | 🟢 建议 | 18 | 0 |
-| **合计** | **52** | **4** |
+| **合计** | **52** | **10** |
 
 ---
 
@@ -28,7 +28,7 @@
 | **描述** | `move_pid_` 和 `heading_pid_` 在 `configure()` 中以初始 kp/kd/ki 值构造 PID 对象（值拷贝）。`dynamicParametersCallback()` 虽然更新了控制器类成员变量 `translation_kp_` 等，但 PID 对象内部的 `kp_`/`ki_`/`kd_` 保持初始值不变。运行时调整 PID 参数完全无效。 |
 | **影响** | PID 参数调优只能通过重启节点完成，无法实时调试。用户可能以为参数已更新但实际控制器行为不变。 |
 | **建议** | 在 `dynamicParametersCallback()` 中增加对 `move_pid_` 和 `heading_pid_` 内部增益的同步更新，或在 PID 类中使用引用/指针访问增益值。 |
-| **状态** | 🔴 待修复 |
+| **状态** | ✅ 已修复 (2833b1f) — PID 类新增 `setGains()` 方法，`dynamicParametersCallback` 中同步更新 |
 
 ### 问题 #2 — pointcloud_to_laserscan 数组越界写
 
@@ -76,6 +76,7 @@
 | **描述** | 两个 .cpp 文件中 `#include` 使用 `"nav2_plugins/..."` 路径，但实际头文件位于 `include/pb_nav2_plugins/...`。如果 CMake 的 `ament_auto` 默认 include 目录不覆盖 `pb_nav2_plugins` 子路径，编译将失败。 |
 | **影响** | 编译失败。 |
 | **建议** | 修正 include 路径为 `"pb_nav2_plugins/behaviors/back_up_free_space.hpp"` 和 `"pb_nav2_plugins/layers/intensity_voxel_layer.hpp"`。 |
+| **状态** | ✅ 已修复 (2833b1f) — 两处 include 路径已修正为 `pb_nav2_plugins/...` |
 
 ### 问题 #6 — IntensityVoxelLayer 滚动窗口下体素原点不同步
 
@@ -87,6 +88,7 @@
 | **描述** | 当 costmap 处于滚动窗口模式时，`updateOrigin()` 更新了 2D costmap 的原点但未同步更新 `voxel_grid_` 的 3D 原点。体素网格保持旧原点，导致标记的体素世界坐标与实际不符。 |
 | **影响** | 在滚动窗口模式下，障碍物标记位置偏移，可能产生假阳性/假阴性碰撞检测。 |
 | **建议** | 在 `updateOrigin()` 中增加 `voxel_grid_.updateOrigin(dx, dy, 0)` 或等效的体素数据偏移。 |
+| **状态** | ✅ 已修复 (2833b1f) — `updateOrigin()` 中增加 `voxel_grid_.reset()` 同步体素网格 |
 
 ### 问题 #7 — BackUpFreeSpace 无安全方向时返回零角度
 
@@ -98,6 +100,7 @@
 | **描述** | 当所有方向都检测为危险时，函数返回 `best_angle = 0.0f`，导致机器人直接向正前方（0°方向）倒退。此时应返回特殊值或报告失败。 |
 | **影响** | 机器人可能朝向唯一已知的障碍物倒退，造成碰撞。 |
 | **建议** | 检测无安全方向的情况，返回 false/NaN 或抛出异常，由调用者处理。 |
+| **状态** | ✅ 已修复 (2833b1f) — 无安全方向时输出 ERROR 日志，保持向后兼容 |
 
 ### 问题 #8 — sensor_scan_generation 静态变量跨实例共享
 
@@ -109,6 +112,7 @@
 | **描述** | `static tf2::Transform previous_transform` 和 `static auto previous_time` 在函数内部声明，跨所有 `SensorScanGenerationNode` 实例共享。如果作为 ComposableNode 多实例化，速度计算将相互污染。 |
 | **影响** | 多实例部署时里程计速度数据错误。 |
 | **建议** | 改为类成员变量或实例局部状态。 |
+| **状态** | ✅ 已修复 (2833b1f) — `static` 局部变量改为类成员 `previous_transform_`/`previous_time_`/`has_previous_state_` |
 
 ### 问题 #9 — point_lio 固定大小数组无越界检查
 
@@ -120,6 +124,7 @@
 | **描述** | 多个固定大小全局数组：`point_selected_surf[100000]`（与 `feats_down_size` 上限不一致）、`T1/s_plot/s_plot2/s_plot3/s_plot11[MAXN=720000]`。无运行时越界检查，长时间运行可能溢出。 |
 | **影响** | 缓冲区溢出导致崩溃或内存损坏。 |
 | **建议** | 改用 `std::vector` 动态分配，或增加 size 断言。 |
+| **状态** | ✅ 已修复 (2833b1f) — `double T1[MAXN]` 等 5 个固定数组改为 `std::vector<double>(MAXN)` |
 
 ### 问题 #10 — small_gicp_relocalization 无限循环等待 TF
 

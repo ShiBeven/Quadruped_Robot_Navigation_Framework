@@ -1,7 +1,7 @@
 // Copyright 2024 Polaris Xia
  
 
-#include "nav2_plugins/behaviors/back_up_free_space.hpp"
+#include "pb_nav2_plugins/behaviors/back_up_free_space.hpp"
 
 namespace pb_nav2_behaviors
 {
@@ -211,6 +211,11 @@ float BackUpFreeSpace::findBestDirection(
     }
   }
   best_angle = (final_safe_angle + final_unsafe_angle) / 2.0f;
+
+  // No safe direction found: all angles are blocked
+  if (final_safe_angle == 0.0f && final_unsafe_angle == 0.0f) {
+    RCLCPP_ERROR(logger_, "No safe direction found for backing up!");
+  }
 
   if (visualize_) {
     visualize(pose, radius, final_safe_angle, final_unsafe_angle);
