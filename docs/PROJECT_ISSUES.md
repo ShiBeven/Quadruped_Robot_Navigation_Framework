@@ -7,12 +7,12 @@
 
 ## 问题汇总
 
-| 严重程度 | 数量 |
-|----------|------|
-| 🔴 严重 | 10 |
-| 🟡 中等 | 24 |
-| 🟢 建议 | 18 |
-| **合计** | **52** |
+| 严重程度 | 数量 | 已修复 |
+|----------|------|--------|
+| 🔴 严重 | 10 | 4 |
+| 🟡 中等 | 24 | 0 |
+| 🟢 建议 | 18 | 0 |
+| **合计** | **52** | **4** |
 
 ---
 
@@ -28,6 +28,7 @@
 | **描述** | `move_pid_` 和 `heading_pid_` 在 `configure()` 中以初始 kp/kd/ki 值构造 PID 对象（值拷贝）。`dynamicParametersCallback()` 虽然更新了控制器类成员变量 `translation_kp_` 等，但 PID 对象内部的 `kp_`/`ki_`/`kd_` 保持初始值不变。运行时调整 PID 参数完全无效。 |
 | **影响** | PID 参数调优只能通过重启节点完成，无法实时调试。用户可能以为参数已更新但实际控制器行为不变。 |
 | **建议** | 在 `dynamicParametersCallback()` 中增加对 `move_pid_` 和 `heading_pid_` 内部增益的同步更新，或在 PID 类中使用引用/指针访问增益值。 |
+| **状态** | 🔴 待修复 |
 
 ### 问题 #2 — pointcloud_to_laserscan 数组越界写
 
@@ -39,6 +40,7 @@
 | **描述** | `int index = (angle - angle_min) / angle_increment` 当 `angle == angle_max` 时，因浮点舍入可能计算出 `index == ranges_size`，导致向 `ranges` 向量越界写入（访问 `ranges[ranges_size]`）。这是上游 `pointcloud_to_laserscan` 包的已知经典 bug。 |
 | **影响** | 段错误或内存损坏，节点崩溃。 |
 | **建议** | 增加 `index = std::min(index, static_cast<int>(ranges_size - 1))` 越界保护，或使用 `std::clamp`。 |
+| **状态** | ✅ 已修复 (289db1a) — 增加 `static_cast<int>` 和 `std::min` 越界保护 |
 
 ### 问题 #3 — point_lio 全局 buffer 无互斥锁保护
 
@@ -50,6 +52,7 @@
 | **描述** | `mtx_buffer` 互斥锁已声明，但所有 `lock()`/`unlock()` 调用均被注释掉。`lidar_buffer`、`imu_deque`、`time_buffer` 等全局 deque 在回调线程和主循环 `sync_packages()` 之间无保护地并发访问。主函数使用 `MultiThreadedExecutor`，存在真实数据竞争风险。 |
 | **影响** | 数据竞争导致偶发崩溃、点云丢失、IMU 数据损坏，表现为 SLAM 结果异常跳变。 |
 | **建议** | 取消注释所有 mutex 锁定，或改用 `SingleThreadedExecutor` 配合 `spin_some()` 避免并发。 |
+| **状态** | ✅ 已修复 (289db1a) — 恢复全部 `mtx_buffer.lock()`/`unlock()` 及 `sig_buffer.notify_all()`，含提前 return 路径的解锁 |
 
 ### 问题 #4 — laserScanToPointCloudNode 析构函数原子变量错误
 
@@ -61,6 +64,7 @@
 | **描述** | 析构函数中 `alive_.store(true)` 应为 `alive_.store(false)`。这导致 `subscriptionListenerThreadLoop` 中的 `while(alive_.load())` 永远为 true，`thread.join()` 可能无限阻塞。 |
 | **影响** | 节点析构时可能 hang，需强制 kill 进程。正常 ROS2 关闭时因 `rclcpp::ok()` 检查会退出循环，但非正常销毁时可能死锁。 |
 | **建议** | 改为 `alive_.store(false)`。 |
+| **状态** | ✅ 已修复 (289db1a) — `alive_.store(true)` → `alive_.store(false)` |
 
 ### 问题 #5 — nav2_plugins 头文件 include 路径不匹配
 
@@ -127,6 +131,7 @@
 | **描述** | `while(true)` 循环等待 `base_frame → lidar_frame` TF，无最大重试次数或超时。如果 TF 永远不可用，节点将无限阻塞。 |
 | **影响** | 节点启动后永久 hang，无法提供服务。 |
 | **建议** | 增加最大重试次数（如 100 次）或超时（如 30 秒），超时后记录 FATAL 并退出。 |
+| **状态** | ✅ 已修复 (289db1a) — 100 次重试上限，超时后 `RCLCPP_FATAL` + `rclcpp::shutdown()` |
 
 ---
 

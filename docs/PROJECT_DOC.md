@@ -620,6 +620,15 @@ RecoveryNode number_of_retries=10  ← 顶层恢复节点
   - `registered_leaf_size: 0.05` — 当前扫描降采样
   - `max_dist_sq: 3.0` — 最大配准距离平方阈值
 
+#### 函数：loadGlobalMap(file_name)
+
+- **用途**：加载全局先验 PCD 地图，并变换到 `odom` 坐标系。
+- **核心算法**：循环等待 `base_frame → lidar_frame` TF 变换可用（✅ 已修复：最多重试 100 次，超时后 FATAL + shutdown，避免无限阻塞）。
+- **分支路径**：
+  - **PCD 加载失败**：记录 ERROR，return。
+  - **TF 获取成功**：在 break 前对 global_map_ 做 `pcl::transformPointCloud`。
+  - **TF 超时**（✅ 新增）：`retry_count >= kMaxRetries(100)` → `RCLCPP_FATAL` + `rclcpp::shutdown()`。
+
 ---
 
 ### 3.9 nav2_loopback_sim — 2D闭环仿真
@@ -917,6 +926,17 @@ ros2 launch nav_bringup legged_slam_launch.py
 | nav2_loopback_sim | Nav2 | 仿真验证 |
 | pcd2pgm | PCL, OpenCV | 离线工具 |
 | rosbag2_composable_recorder | rosbag2 | 数据采集工具 |
+
+---
+
+## 附录 B: 修复记录
+
+| 提交 | 日期 | 修复问题 | 涉及文件 |
+|------|------|----------|----------|
+| `289db1a` | 2026-07-04 | #2 数组越界保护 | `pointcloud_to_laserscan_node.cpp` |
+| | | #3 恢复 mutex 并发保护 | `li_initialization.cpp` |
+| | | #4 析构函数 atomic flag 修正 | `laserscan_to_pointcloud_node.cpp` |
+| | | #10 TF 等待超时保护 | `small_gicp_relocalization.cpp` |
 
 ---
 
